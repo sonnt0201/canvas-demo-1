@@ -18,17 +18,15 @@ window.addEventListener("load", function () {
       this.vx = 0;
       this.vy = 0;
       this.ease = 0.4;
-      this.mouse = {
-        radius: 3000,
-        x: undefined,
-        y: undefined
-      }
-      window.addEventListener('mousemove', event => {
-        this.mouse.x = event.x;
-        this.mouse.y = event.y;
-        console.log(this.mouse.x, this.mouse.y);
 
-      });
+      this.dx = 0;
+      this.dy = 0;
+      this.distance = 0;
+      this.force = 0;
+      this.angle = 0;
+      this.friction = 0.95; // ma sát
+
+      
     }
 
     draw(context) {
@@ -37,8 +35,40 @@ window.addEventListener("load", function () {
     }
 
     update() {
-      this.x += (this.originX - this.x) * this.ease;
-      this.y += (this.originY - this.y) * this.ease;
+      // (dx, dy) - vector nối từ particle tới chuột
+      this.dx = this.effect.mouse.x - this.x;
+      this.dy = this.effect.mouse.y - this.y;
+      this.distance = this.dx * this.dx + this.dy * this.dy; 
+
+      // càng gần thì lực càng lớn, càng xa thì lực đẩy càng nhỏ 
+      // dấu trừ => gia tốc ngược chiều vận tốc, càng đẩy ra xa thì particle đi càng chậm và dừng lại về 0 
+      this.force = -this.effect.mouse.radius/this.distance;
+
+      if (this.distance < this.effect.mouse.radius) {
+        this.angle = Math.atan2(this.dy, this.dx);
+        // coi khối lượng là 1 => vận tốc = vận tốc ban đầu + gia tốc * t với gia tốc bằng lực
+        
+        // lấy cos để được hình chiếu của lực/ gia tốc xuống trục ox
+        this.vx += this.force * Math.cos(this.angle) ;
+        // tương tự với y
+        this.vy += this.force * Math.sin(this.angle); 
+      }
+
+
+      // this.originX - this.x là vector dời từ điểm hiện tại đến điểm originX
+      this.x += (this.vx *= this.friction) + (this.originX - this.x) * this.ease; 
+      this.y += (this.vy *= this.friction) + (this.originY - this.y) * this.ease;
+      /* 
+        vector dời (Dx, Dy) là hợp của 2 thành phần: (vx, vy) khi mousemoving và  
+        vector (dx, dy) để phục hồi particle về vị trí đúng (originX, originY)
+
+        khi (vx, vy) về 0 thì chỉ còn vector hồi, điểm ảnh về vị trí cũ
+      */
+
+        /*
+          friction để vận tốc (vx,vy) giảm dần khi particle di chuyển => sau cùng (vx,vy) = 0;
+        */
+
     }
 
     warp() {
@@ -59,6 +89,16 @@ window.addEventListener("load", function () {
       this.x = this.centerX - this.image.width / 2.0;
       this.y = this.centerY - this.image.height / 2.0;
       this.gap = 2;
+
+      this.mouse = {
+        radius: 2000,
+        x: undefined,
+        y: undefined
+      }
+      window.addEventListener('mousemove', event => {
+        this.mouse.x = event.clientX;
+        this.mouse.y = event.clientY;
+      });
     }
 
     init(context) {
